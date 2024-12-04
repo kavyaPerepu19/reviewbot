@@ -2,12 +2,20 @@ from flask import Flask, request, jsonify
 from playwright.sync_api import sync_playwright
 from flask_cors import CORS
 import json
-from rag import rag
+# from rag import rag
 
 import time
 
 app = Flask(__name__)
 CORS(app)
+
+def toggle_sort(page):
+    try:
+        page.wait_for_selector("select.OZuttk.JEZ5ey")
+        page.select_option("select.OZuttk.JEZ5ey", 'MOST_RECENT')
+    
+    except Exception as e:
+        print(f"Error toggling sort: {e}")
 
 def get_product_details(page):
     try:
@@ -135,6 +143,8 @@ def get_reviews(page):
             time.sleep(3)
     except:
         print("Not clicked")
+    
+    toggle_sort(page)
 
     reviews_and_ratings = []
     pc = 0
