@@ -9,7 +9,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const ProductModel = require('../schemas/productSchemas')
 const { HfInference } = require('@huggingface/inference');
-const client = new HfInference("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");
+const client = new HfInference("api");
 const scrapeRouter = express.Router();
 
 
