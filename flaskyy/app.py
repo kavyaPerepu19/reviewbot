@@ -1,13 +1,23 @@
 from flask import Flask, request, jsonify
 from playwright.sync_api import sync_playwright
 from flask_cors import CORS
+
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
+
+
 import json
 # from rag import rag
 
 import time
 
+
+
+
 app = Flask(__name__)
 CORS(app)
+tokenizer = AutoTokenizer.from_pretrained("siebert/sentiment-roberta-large-english")
+model = AutoModelForSequenceClassification.from_pretrained("siebert/sentiment-roberta-large-english")
 
 def toggle_sort(page):
     try:
@@ -210,6 +220,28 @@ def get_reviews(page):
 
     return reviews_and_ratings
 
+def get_highlights(page):
+    try:
+        # Wait for the container div to load
+        page.wait_for_selector("div.DOjaWF", timeout=5000)
+
+        # Locate the container with highlights
+        highlights_div = page.query_selector("div.DOjaWF")
+        if highlights_div:
+            # Locate the div containing the "Highlights" list
+            Hlist = highlights_div.query_selector("div.xFVion")
+            if Hlist:
+                print("In the list div")
+                # Extract all list items under the ul element
+                ul_element = Hlist.query_selector("ul")
+                if ul_element:
+                    print("In the list element, extracting list items")
+                    highlights = [li.inner_text() for li in ul_element.query_selector_all("li._7eSDEz")]
+                    return highlights
+        return []
+    except Exception as e:
+        print(f"Error occurred while getting highlights: {e}")
+        return []
 
 
 
@@ -229,6 +261,8 @@ def scrape():
 
             product_details = get_product_details(page)
             specs = get_specifications(page)
+            high = get_highlights(page)
+            print("Highlights = ",high)
 
             reviews = get_reviews(page)
             
@@ -236,7 +270,8 @@ def scrape():
             response = {
                 'product_details': product_details,
                 'reviews': reviews,
-                'specifications': specs
+                'specifications': specs,
+                'highlights':high
             }
 
             browser.close()
@@ -246,6 +281,38 @@ def scrape():
         return jsonify({"error": f"Error occurred: {e}"}), 500
     
 
+@app.route('/senti', methods=['POST'])
+def analyze_sentiment():
+    review_texts = request.json.get('reviewTexts') 
+    print("Review texts in flask = ",review_texts)
+    if not review_texts or not isinstance(review_texts, list):
+        return jsonify({"error": "Invalid input, expected an array of review texts."}), 400
+    
+    sentiment_results = []
+    positive_count = 0
+    negative_count = 0
+    
+    for review in review_texts:
+
+        inputs = tokenizer(review, return_tensors="pt", truncation=True, padding=True, max_length=512)
+
+        with torch.no_grad():
+            outputs = model(**inputs)
+        
+  
+        logits = outputs.logits
+        sentiment = torch.argmax(logits, dim=-1).item()
+        
+        if sentiment == 1:
+            positive_count += 1
+        else:
+            negative_count += 1
+    
+
+    return jsonify({
+        "positive": positive_count,
+        "negative": negative_count
+    })
 
 
 if __name__ == '__main__':

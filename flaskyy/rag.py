@@ -13,22 +13,22 @@ PERSIST_DIR = "./vector_store"
 MODEL_NAME = "nomic-embed-text"
 
 def create_or_load_vector_store(scraped_data, model=MODEL_NAME):
-    if os.path.exists(PERSIST_DIR):
-        vector_db = Chroma(persist_directory=PERSIST_DIR, embedding_function=OllamaEmbeddings(model=model))
-        print("Loaded vector store from disk.")
-    else:
-        print("Creating a new vector store...")
-        knowledge_base = [{'text': review['review']} for review in scraped_data.get('reviews', [])]
+   
+    print("Creating a new vector store...")
+    knowledge_base = [{'text': review['review']} for review in scraped_data.get('reviews', [])]
 
-        if isinstance(scraped_data.get('specifications', []), list):
-            knowledge_base += [{'text': spec['spec']} for spec in scraped_data['specifications']]
-        documents = [Document(page_content=doc['text']) for doc in knowledge_base]
-        text_splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-        chunks = text_splitter.split_documents(documents)
-        embeddings = OllamaEmbeddings(model=model)
-        vector_db = Chroma.from_documents(documents=chunks, embedding=embeddings, persist_directory=PERSIST_DIR)
-        vector_db.persist()  
-        print("Vector store created and persisted to disk.")
+    if isinstance(scraped_data.get('specifications', []), list):
+        knowledge_base += [{'text': spec['spec']} for spec in scraped_data['specifications']]
+
+    if isinstance(scraped_data.get('product_details',[]),list):
+        knowledge_base += [{'text': detail['detail']} for detail in scraped_data['product_details']]
+    documents = [Document(page_content=doc['text']) for doc in knowledge_base]
+    text_splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    chunks = text_splitter.split_documents(documents)
+    embeddings = OllamaEmbeddings(model=model)
+    vector_db = Chroma.from_documents(documents=chunks, embedding=embeddings, persist_directory=PERSIST_DIR)
+    vector_db.persist()  
+    print("Vector store created and persisted to disk.")
     
     return vector_db
 
@@ -83,3 +83,4 @@ def query():
 
 if __name__ == "__main__":
     app.run(debug=True)
+

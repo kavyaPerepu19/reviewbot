@@ -7,7 +7,7 @@ import Login from './Components/Login';
 import Error from './Components/Error';
 import Signup from './Components/Signup';
 import LinkInput from './Components/LinkInput';
-import ProductDetail from './Components/Product';
+import ProdDes from './Components/ProdDes';
 import { AuthProvider } from './context/AuthContext';
 
 const App = () => {
@@ -16,10 +16,10 @@ const App = () => {
     name: "Apple iPhone 15 (Black, 128 GB)",
     price: "₹57,749",
     rating: "4.6",
-    positiveReviews: 300,
-    negativeReviews: 45,
-    reviewSummary: "Great performance, sleek design, but a bit pricey.",
-    features: [
+    pos: 300,
+    neg: 45,
+    sumRes: "Great performance, sleek design, but a bit pricey.",
+    high: [
       "128 GB Storage",
       "A16 Bionic Chip",
       "6.1-inch Super Retina Display",
@@ -41,7 +41,7 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/link" element={<LinkInput setProduct={setProduct} />} /> 
-              <Route path="/product" element={<ProductDetail product={product} />} />
+              <Route path="/product" element={<ProdDes product={product} />} />
               <Route path="*" element={<Error />} />
             </Routes>
           </div>

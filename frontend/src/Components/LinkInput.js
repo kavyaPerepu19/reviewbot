@@ -8,14 +8,14 @@ const LinkInput = ({setProduct}) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const a = `${process.env.REACT_APP_API_NODE_URI}`
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const formData = new URLSearchParams();
       formData.append('url', url)
-      console.log(a);
+
 
       const res = await axios.post('http://localhost:8000/api/scrape', formData, {
 
@@ -24,24 +24,37 @@ const LinkInput = ({setProduct}) => {
         },
       });
        
-      
-      const { product_details, reviews } = res.data;
-      console.log(product_details);
-      setIsSubmitted(true);
+      // productDetails: pDetails,
+      //     summary: summarizeResponse.data.summary,
+      //     sentiment: sentimentResponse.data,
+
+      const { productDetails, summary, sentiment,high} = res.data;
+
+      // console.log(res.data);
+
+
+      // console.log(productDetails);
       setProduct({
-        image: product_details.image,
-        name: product_details.name,
-        price: product_details.price,
-        rating: product_details.rating,
-        reviews: reviews, 
+        image: productDetails.image,
+        name: productDetails.name,
+        price: productDetails.price,
+        rating: productDetails.rating,
+        sumRes: summary,
+        pos: sentiment.positive,
+        neg: sentiment.negative,
+        high: high,
       });
-  
+
+      console.log("this is LinkInput",productDetails.image, productDetails.name, productDetails.price, productDetails.rating, sentiment.positive, sentiment.negative, summary, high);
+      
+      setIsSubmitted(true);
       
 
       
       
       
-      console.log('Response:', res.data); 
+      // console.log('Response:', res.data);
+      // console.log('Product Details:', productDetails); 
       
       
      
