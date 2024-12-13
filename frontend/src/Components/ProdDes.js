@@ -23,6 +23,7 @@ const ProdDes = ({ product }) => {
 
 
   return(
+    
     <div className="prod-container">
       <div className="prod-wrapper">
         <div className="prod-card">

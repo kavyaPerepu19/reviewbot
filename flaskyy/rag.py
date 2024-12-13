@@ -1,86 +1,143 @@
-import os
 from flask import Flask, request, jsonify
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.vectorstores import Chroma
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.docstore.document import Document
-import ollama
+from langchain.vectorstores import FAISS
+from flask_cors import CORS
+from langchain.docstore.document import Document as langchainDocument
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores.utils import DistanceStrategy
+from transformers import AutoTokenizer
+from huggingface_hub import InferenceClient
 
 app = Flask(__name__)
+CORS(app)
 
-vector_db_cache = None  
-PERSIST_DIR = "./vector_store"
-MODEL_NAME = "nomic-embed-text"
 
-def create_or_load_vector_store(scraped_data, model=MODEL_NAME):
-   
-    print("Creating a new vector store...")
-    knowledge_base = [{'text': review['review']} for review in scraped_data.get('reviews', [])]
+LLAMA_API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-1B"
+headers = {"Authorization": "Bearer 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"}  # Replace with your API key
 
-    if isinstance(scraped_data.get('specifications', []), list):
-        knowledge_base += [{'text': spec['spec']} for spec in scraped_data['specifications']]
+client = InferenceClient(api_key="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")
 
-    if isinstance(scraped_data.get('product_details',[]),list):
-        knowledge_base += [{'text': detail['detail']} for detail in scraped_data['product_details']]
-    documents = [Document(page_content=doc['text']) for doc in knowledge_base]
-    text_splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-    chunks = text_splitter.split_documents(documents)
-    embeddings = OllamaEmbeddings(model=model)
-    vector_db = Chroma.from_documents(documents=chunks, embedding=embeddings, persist_directory=PERSIST_DIR)
-    vector_db.persist()  
-    print("Vector store created and persisted to disk.")
+RAW_KNOWLEDGE_BASE = []
+KNOWLEDGE_VECTOR_DATABASE = None
+
+MARKDOWN_SEPARATORS = [
+    "\n#{1,6}", "```\n", "\n\\\\\\*+\n", "\n---+\n", "\n_+\n", "\n\n", "\n", " ", ""
+]
+
+def split_documents(chunk_size, knowledge_base):
+    text_splitter = RecursiveCharacterTextSplitter.from_huggingface_tokenizer(
+        AutoTokenizer.from_pretrained("nomic-ai/nomic-embed-text-v1"),
+        chunk_size=chunk_size,
+        chunk_overlap=int(chunk_size / 10),
+        add_start_index=True,
+        strip_whitespace=True,
+        separators=MARKDOWN_SEPARATORS,
+    )
+    docs_processed = []
+    for doc in knowledge_base:
+        docs_processed += text_splitter.split_documents([doc])
+
+    unique_texts = {}
+    docs_processed_unique = []
+    for doc in docs_processed:
+        if doc.page_content not in unique_texts:
+            unique_texts[doc.page_content] = True
+            docs_processed_unique.append(doc)
+    return docs_processed_unique
+
+@app.route('/upload_reviews', methods=['POST'])
+def upload_reviews():
+    global RAW_KNOWLEDGE_BASE, KNOWLEDGE_VECTOR_DATABASE
+
+    reviews_data = request.json.get('reviews', [])
+    if isinstance(reviews_data, dict):
+        reviews = reviews_data.get('reviews', [])
+    else:
+        reviews = reviews_data
     
-    return vector_db
+    if not reviews:
+        return jsonify({"error": "No reviews provided"}), 400
 
-def retrieve_relevant_documents(query, vector_db, top_n=5):
-
-    relevant_docs = vector_db.similarity_search(query, k=top_n)
-    return relevant_docs
-
-def generate_answer(query, context, model="llama3"):
-    context_text = "\n".join([doc.page_content for doc in context])
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": f"Context: {context_text}\nQuestion: {query} please answer the question based only on the context. If the answer is not in the context, say 'Sorry, I cannot answer the question.' Keep the answer concise."}
+    RAW_KNOWLEDGE_BASE = [
+        langchainDocument(page_content=review['review']) for review in reviews
     ]
-    output = ollama.chat(model=model, messages=messages)
-    return output['message']['content']
 
-@app.route('/load', methods=['POST'])
-def load_database():
-    global vector_db_cache
-    scraped_data = request.get_json().get("scraped_data")  
-    if not scraped_data:
-        return jsonify({"error": "Scraped data is required."}), 400
+ 
+    docs_processed = split_documents(512, RAW_KNOWLEDGE_BASE)
 
-    try:
-        vector_db_cache = create_or_load_vector_store(scraped_data)
-        return jsonify({"message": "Knowledge base loaded successfully."}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    embed_model = HuggingFaceEmbeddings(
+        model_name="nomic-ai/nomic-embed-text-v1",
+        model_kwargs={"device": "cpu", "trust_remote_code": True},
+        encode_kwargs={"normalize_embeddings": True},
+    )
+
+    KNOWLEDGE_VECTOR_DATABASE = FAISS.from_documents(
+        docs_processed,
+        embed_model,
+        distance_strategy=DistanceStrategy.COSINE,
+    )
+
+    return jsonify({"message": "Reviews uploaded and processed successfully."})
+
+# def upload_reviews():
+#     global RAW_KNOWLEDGE_BASE, KNOWLEDGE_VECTOR_DATABASE
+
+#     reviews = request.json.get('reviews', [])
+#     if not reviews:
+#         return jsonify({"error": "No reviews provided"}), 400
+
+#     # Convert to langchain documents
+#     RAW_KNOWLEDGE_BASE = [
+#         langchainDocument(page_content=review['text']) for review in reviews
+#     ]
+
+#     # Process and index knowledge base
+#     docs_processed = split_documents(512, RAW_KNOWLEDGE_BASE)
+
+#     embed_model = HuggingFaceEmbeddings(
+#         model_name="nomic-ai/nomic-embed-text-v1",
+#         model_kwargs={"device": "cuda", "trust_remote_code": True},
+#         encode_kwargs={"normalize_embeddings": True},
+#     )
+
+#     KNOWLEDGE_VECTOR_DATABASE = FAISS.from_documents(
+#         docs_processed,
+#         embed_model,
+#         distance_strategy=DistanceStrategy.COSINE,
+#     )
+
+#     return jsonify({"message": "Reviews uploaded and processed successfully."})
 
 @app.route('/query', methods=['POST'])
-def query():
-    """
-    API endpoint to handle queries.
-    """
-    global vector_db_cache
-    data = request.get_json()
-    query_text = data.get("query")
+def query_knowledge_base():
+    global KNOWLEDGE_VECTOR_DATABASE
+    if KNOWLEDGE_VECTOR_DATABASE is None:
+        return jsonify({"error": "Knowledge base is not initialized."}), 400
 
-    if not query_text:
-        return jsonify({"error": "Query is required."}), 400
+    user_query = request.json.get('question', '')
+    if not user_query:
+        return jsonify({"error": "No query provided"}), 400
 
-    if vector_db_cache is None:
-        return jsonify({"error": "Knowledge base is not loaded. Please load it using /load_database."}), 400
+    retrieval_docs = KNOWLEDGE_VECTOR_DATABASE.similarity_search(query=user_query, k=2)
+    retrieved_docs_text = [doc.page_content for doc in retrieval_docs]
+    context = "\n".join(retrieved_docs_text)
 
-    try:
-        relevant_documents = retrieve_relevant_documents(query_text, vector_db_cache)
-        answer = generate_answer(query_text, relevant_documents)
-        return jsonify({"answer": answer})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    prompt = f"""
+        Context: {context}
 
-if __name__ == "__main__":
-    app.run(debug=True)
+        Question: {user_query}
 
+    Based on the context provided, answer the question as accurately as possible.If the question is about physical features and the answer is present in the context please respond with answers in product description  If the answer is not found in the context, respond with "The information is not available in the provided context."""
+    messages = [{"role": "user", "content": prompt}]
+
+    completion = client.chat.completions.create(
+        model="Qwen/Qwen2.5-Coder-32B-Instruct",
+        messages=messages,
+        max_tokens=500
+    )
+    response = completion.choices[0].message["content"]
+
+    return jsonify({"answer": response})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5001)

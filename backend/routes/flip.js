@@ -9,7 +9,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const ProductModel = require('../schemas/productSchemas')
 const { HfInference } = require('@huggingface/inference');
-const client = new HfInference("api");
+const client = new HfInference("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");
 const scrapeRouter = express.Router();
 
 
@@ -88,6 +88,19 @@ scrapeRouter.post('/scrape', async (req, res) => {
       }
       catch{
         console.log("error in sentiment analysis");
+      }
+
+
+      try{
+        const knowledge = await axios.post(
+          "http://localhost:5001/upload_reviews",
+          {reviews:flaskResponse.data},
+          {headers: { 'Content-Type': 'application/json' } }
+        );
+        console.log("knowledge uploaded");
+      }
+      catch{
+        console.log("error in uploading knowledge");
       }
 
     console.log("Product Details:", pDetails);
@@ -182,18 +195,17 @@ scrapeRouter.post('/senti', async (req, res) => {
 
 scrapeRouter.post('/chat', async (req, res) => {
   console.log('POST /chat called with data:');
-  const { query,scraped_data } = req.body;
+  const { question } = req.body;
 
-  if (!scraped_data || !query) {
+  if (!question) {
       return res.status(400).json({ error: 'Data or query not provided' });
   }
 
   try {
       const flaskResponse = await axios.post(
-          'http://localhost:5000/query',
+          'http://localhost:5001/query',
           {
-              query: query, 
-              scraped_data: scraped_data
+              question: question, 
           },
           {
               headers: {
@@ -209,5 +221,6 @@ scrapeRouter.post('/chat', async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 module.exports = scrapeRouter;

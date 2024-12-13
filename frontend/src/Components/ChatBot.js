@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Send } from 'lucide-react';
+import axios from 'axios';
 
-const ChatBot=()=> {
+const ChatBot = () => {
   const [messages, setMessages] = useState([
     { id: 1, text: "Hello! I'm ReviewBot. How can I help you today?", isBot: true }
   ]);
   const [input, setInput] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
@@ -17,17 +18,34 @@ const ChatBot=()=> {
       isBot: false
     };
 
+
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
 
-    setTimeout(() => {
+    try {
+      
+      const response = await axios.post('http://localhost:8000/api/chat', { question: input });
+
       const botMessage = {
         id: messages.length + 2,
-        text: "I'm analyzing your message. Here's what I found...",
+        text: response.data.answer || "Sorry, I couldn't process that.",
         isBot: true
       };
+
+
       setMessages((prev) => [...prev, botMessage]);
-    }, 1000);
+    } catch (error) {
+      console.error('Error communicating with the backend:', error.message);
+
+      const errorMessage = {
+        id: messages.length + 2,
+        text: "Oops! Something went wrong. Please try again later.",
+        isBot: true
+      };
+
+
+      setMessages((prev) => [...prev, errorMessage]);
+    }
   };
 
   return (
@@ -88,8 +106,6 @@ const ChatBot=()=> {
       </div>
     </div>
   );
-}
-
+};
 
 export default ChatBot;
-

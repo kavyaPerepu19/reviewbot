@@ -266,7 +266,9 @@ def scrape():
 
             reviews = get_reviews(page)
             
-
+            # if not high:
+            #     high= specs["General"]
+            
             response = {
                 'product_details': product_details,
                 'reviews': reviews,
