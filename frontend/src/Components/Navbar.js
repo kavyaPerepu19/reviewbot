@@ -39,7 +39,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-4">
             {isLoggedIn ? (
               <>
-                <Link to="/chatbot" className="text-gray-600 hover:text-blue-600">Chat</Link>
+                <Link to="/history" className="text-gray-600 hover:text-blue-600">History</Link>
                 <Link to="/link" className="text-gray-600 hover:text-blue-600">Add Link</Link>
                 <button
                   onClick={handleLogout}
@@ -62,11 +62,11 @@ const Navbar = () => {
               {isLoggedIn ? (
                 <>
                   <Link
-                    to="/chatbot"
+                    to="/history"
                     className="text-gray-600 hover:text-blue-600"
                     onClick={toggleMenu}
                   >
-                    Chat
+                    History
                   </Link>
                   <Link
                     to="/link"

@@ -26,7 +26,7 @@ const Login = () => {
           throw new Error('Invalid username or password');
         }
 
-        login(); 
+        login(username); 
         navigate('/');
       } catch (err) {
         setError('Invalid username or password.');

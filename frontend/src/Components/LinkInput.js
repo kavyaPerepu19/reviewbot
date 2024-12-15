@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Link2 } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Loader from './Loader';
+import { useAuth } from '../context/AuthContext';
 
 const LinkInput = ({setProduct}) => { 
   const [url, setUrl] = useState('');
+  const [flag, setFlag] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const content = useAuth();
+  const user = content.username;
+  useEffect(() => {
+   
+    console.log("this is user",user);
+  }, [user]);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,6 +24,7 @@ const LinkInput = ({setProduct}) => {
     try {
       const formData = new URLSearchParams();
       formData.append('url', url)
+      formData.append('username', user)
 
 
       const res = await axios.post('http://localhost:8000/api/scrape', formData, {
@@ -69,6 +79,9 @@ const LinkInput = ({setProduct}) => {
   };
 
   return (
+    <div>
+
+      {!loading &&
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-center justify-center px-4 bg-slate-100">
       <div className="max-w-xl w-full bg-white rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
@@ -105,20 +118,16 @@ const LinkInput = ({setProduct}) => {
           </button>
         </form>
 
-        {loading && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg flex justify-center items-center">
-            <div className="animate-spin h-8 w-8 border-t-4 border-blue-600 border-solid rounded-full" />
-          </div>
-        )}
+        
 
-        {isSubmitted && !loading && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-gray-700 text-center">
-              Your link has been submitted for analysis.
-            </p>
-          </div>
-        )}
+
       </div>
+    </div>
+}
+
+    {loading && (
+          <Loader/>
+        )}
     </div>
   );
 };

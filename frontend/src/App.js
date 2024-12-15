@@ -9,6 +9,7 @@ import Signup from './Components/Signup';
 import LinkInput from './Components/LinkInput';
 import ProdDes from './Components/ProdDes';
 import { AuthProvider } from './context/AuthContext';
+import ProductHistory from './Components/ProductHistory';
 
 const App = () => {
   const [product, setProduct] = useState({
@@ -42,6 +43,7 @@ const App = () => {
               <Route path="/signup" element={<Signup />} />
               <Route path="/link" element={<LinkInput setProduct={setProduct} />} /> 
               <Route path="/product" element={<ProdDes product={product} />} />
+              <Route path="/history" element={<ProductHistory  setProduct={setProduct}/>} />
               <Route path="*" element={<Error />} />
             </Routes>
           </div>

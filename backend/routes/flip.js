@@ -7,7 +7,8 @@ const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const ProductModel = require('../schemas/productSchemas')
+const ProductModel = require('../schemas/productSchemas');
+const userProductModel = require('../schemas/historySchemas');
 const { HfInference } = require('@huggingface/inference');
 const client = new HfInference("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");
 const scrapeRouter = express.Router();
@@ -21,14 +22,17 @@ scrapeRouter.use(bodyParser.json());
 
 scrapeRouter.post('/scrape', async (req, res) => {
   console.log('POST /scrape called with URL:', req.body.url); 
-  const { url } = req.body;
+  const { url ,username} = req.body;
 
   if (!url) {
       return res.status(400).json({ error: "URL not provided" });
   }
+  if (!username) {
+    return res.status(400).json({ error: "Username not provided" });
+  }
 
   
-
+//  scrape flask caaaaall
   try {
       const flaskResponse = await axios.post(
           'http://localhost:5000/scrape',
@@ -53,6 +57,7 @@ scrapeRouter.post('/scrape', async (req, res) => {
         productLink: url,
       });
       
+// call to create new product      
       try{
         await newProduct.save();
         console.log("product created successfully")
@@ -64,7 +69,39 @@ scrapeRouter.post('/scrape', async (req, res) => {
       // console.log("Reviews:", reviews);
       let summarizeResponse = null;
       let sentimentResponse = null;
+      const productId = newProduct.productId;
 
+
+// updating history
+      try {
+
+        let userProduct = await userProductModel.findOne({ username });
+    
+        if (userProduct) {
+  
+          if (!userProduct.viewedProducts.includes(productId)) {
+            userProduct.viewedProducts.push(productId);
+            await userProduct.save();
+            console.log(`Product ID ${productId} added to username ${username}'s viewedProducts`);
+          } else {
+            console.log(`Product ID ${productId} already exists in username ${username}'s viewedProducts`);
+          }
+        } else {
+          
+          userProduct = new userProductModel({
+            username,
+            viewedProducts: [productId],
+          });
+          await userProduct.save();
+          console.log(`New userProduct created for username ${username} with productId ${productId}`);
+        }
+    
+
+      } catch (error) {
+        console.error('Error updating user products:', error.message);
+        
+      }
+// summarization express route
       try{
          summarizeResponse = await axios.post(
           'http://localhost:8000/api/summarize',
@@ -77,7 +114,7 @@ scrapeRouter.post('/scrape', async (req, res) => {
       catch{
         console.log("error in summarizing");
       }
-
+// sentiment express route
       try{
         sentimentResponse = await axios.post(
           'http://localhost:8000/api/senti',
@@ -90,14 +127,15 @@ scrapeRouter.post('/scrape', async (req, res) => {
         console.log("error in sentiment analysis");
       }
 
-
+// knowledge base upload faiss filling
       try{
         const knowledge = await axios.post(
-          "http://localhost:5001/upload_reviews",
+          "http://localhost:5000/upload_reviews",
           {reviews:flaskResponse.data},
           {headers: { 'Content-Type': 'application/json' } }
         );
         console.log("knowledge uploaded");
+        console.log(knowledge.data.knowledge_base);
       }
       catch{
         console.log("error in uploading knowledge");
@@ -122,105 +160,5 @@ scrapeRouter.post('/scrape', async (req, res) => {
       res.status(500).json({ error: 'Error communicating with Flask server' });
   }
 });
-
-
-scrapeRouter.post("/summarize", async (req, res) => {
-  console.log("Received request to summarize:");
-  const { reviews } = req.body;
-
-  if (!reviews || !Array.isArray(reviews)) {
-      return res.status(400).json({ error: "Invalid input. Expected an array of reviews." });
-  }
-
-  try {
-      const reviewTexts = reviews.map((review) => review.review).join(' '); 
-
-      // console.log("Full review text for summarization:\n");
-    
-      const chatCompletion = await client.chatCompletion({
-          model: "mistralai/Mistral-7B-Instruct-v0.3",
-          messages: [
-          {
-              role: "user",
-              content: `Please provide a  summary of the following reviews in 75 words:\n\n${reviewTexts}`,
-          },
-          ],
-          max_tokens: 400, 
-});
-
-
-const summary = chatCompletion.choices[0].message.content;
-
-return res.json({ summary });
-} catch (error) {
-console.error("Error processing reviews:", error);
-return res.status(500).json({ error: "Failed to process reviews" });
-}
-});
-
-
-
-scrapeRouter.post('/senti', async (req, res) => {
-  console.log("Received request for sentii:");
-  const { reviews } = req.body;
-
-  if (!reviews || !Array.isArray(reviews)) {
-      return res.status(400).json({ error: "Invalid input. Expected an array of reviews." });
-  }
-
-  try {
-      const reviewTexts = reviews.map((review) => review.review);
-      // console.log(reviewTexts);
-      const response = await axios.post('http://localhost:5000/senti', {reviewTexts} , {
-          headers: {
-              'Content-Type': 'application/json',  
-          }
-      });
-
-      const positiveCount = response.data.positive;
-      const negativeCount = response.data.negative;
-      // console.log("Sentiment Analysis Response:", response.data);
-
-      res.status(200).json({
-          positive: positiveCount,
-          negative: negativeCount
-      });
-  } catch (error) {
-      console.error("Error during sentiment analysis:", error);
-      res.status(500).json({ error: "Failed to process sentiment analysis." });
-  }
-});
-
-
-
-scrapeRouter.post('/chat', async (req, res) => {
-  console.log('POST /chat called with data:');
-  const { question } = req.body;
-
-  if (!question) {
-      return res.status(400).json({ error: 'Data or query not provided' });
-  }
-
-  try {
-      const flaskResponse = await axios.post(
-          'http://localhost:5001/query',
-          {
-              question: question, 
-          },
-          {
-              headers: {
-                  'Content-Type': 'application/json', 
-              },
-          }
-      );
-      
-      console.log('Response from Flask:');
-      res.status(flaskResponse.status).json(flaskResponse.data);
-  } catch (error) {
-      console.error('Error communicating with Flask server:', error.message);
-      res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 
 module.exports = scrapeRouter;

@@ -12,11 +12,13 @@ app = Flask(__name__)
 CORS(app)
 
 
+# Meta-Llama API details
 LLAMA_API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-1B"
 headers = {"Authorization": "Bearer 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"}  # Replace with your API key
 
 client = InferenceClient(api_key="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")
 
+# Initialize global variables
 RAW_KNOWLEDGE_BASE = []
 KNOWLEDGE_VECTOR_DATABASE = None
 
@@ -49,6 +51,7 @@ def split_documents(chunk_size, knowledge_base):
 def upload_reviews():
     global RAW_KNOWLEDGE_BASE, KNOWLEDGE_VECTOR_DATABASE
 
+    # Check if reviews is a list or nested object
     reviews_data = request.json.get('reviews', [])
     if isinstance(reviews_data, dict):
         reviews = reviews_data.get('reviews', [])
@@ -62,7 +65,7 @@ def upload_reviews():
         langchainDocument(page_content=review['review']) for review in reviews
     ]
 
- 
+    # Process and index knowledge base
     docs_processed = split_documents(512, RAW_KNOWLEDGE_BASE)
 
     embed_model = HuggingFaceEmbeddings(
@@ -127,7 +130,7 @@ def query_knowledge_base():
 
         Question: {user_query}
 
-    Based on the context provided, answer the question as accurately as possible.If the question is about physical features and the answer is present in the context please respond with answers in product description  If the answer is not found in the context, respond with "The information is not available in the provided context."""
+    Based on the context provided, answer the question as accurately as possible. If the answer is not found in the context, respond with "The information is not available in the provided context."""
     messages = [{"role": "user", "content": prompt}]
 
     completion = client.chat.completions.create(

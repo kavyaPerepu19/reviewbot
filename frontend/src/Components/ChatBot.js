@@ -50,7 +50,7 @@ const ChatBot = () => {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-100 flex">
-      <div className="w-64 bg-white border-r border-gray-200 p-4 hidden md:block">
+      {/* <div className="w-64 bg-white border-r border-gray-200 p-4 hidden md:block">
         <h3 className="text-xl font-semibold text-gray-800 mb-4">History</h3>
         <div className="space-y-2">
           {messages.filter((m) => !m.isBot).map((message) => (
@@ -62,7 +62,7 @@ const ChatBot = () => {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
 
       <div className="flex-1 flex flex-col">
         <div className="flex-1 p-4 overflow-y-auto">
