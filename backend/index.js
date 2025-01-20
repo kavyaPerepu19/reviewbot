@@ -37,6 +37,10 @@ app.use('/api',ragRouter);
 app.use('/api',sentiRouter);
 app.use('/api',sumRouter);
 
+app.get('/',(req,res)=>{
+    res.send('reached root')
+})
+
 app.listen(8000, () => {
     console.log("Server is running on port 8000");
 });
