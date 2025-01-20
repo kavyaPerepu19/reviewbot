@@ -87,7 +87,7 @@ const LinkInput = ({setProduct}) => {
         <div className="text-center mb-8">
           <Link2 className="h-12 w-12 text-blue-600 mx-auto mb-4" />
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Add Review Link
+            Add Flipkart Link
           </h2>
           <p className="text-gray-600">
             Enter the URL of the product or service you'd like to analyze
