@@ -7,3 +7,5 @@ langchain
 faiss-cpu
 huggingface-hub
 sentence-transformers
+einops
+langchain-huggingface
