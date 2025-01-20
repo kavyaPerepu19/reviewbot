@@ -19,7 +19,7 @@ const ProductHistory = (setProduct) => {
 
   const getProducts = async () => {
     try {
-      const response = await axios.get(`http://localhost:8000/api/history/${user}`);
+      const response = await axios.get(`https://reviewbot-backend.vercel.app/api/history/${user}`);
       setProducts(response.data);
     } catch (error) {
       console.log("Error in getting products:", error);

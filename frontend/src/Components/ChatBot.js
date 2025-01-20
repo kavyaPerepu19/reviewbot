@@ -24,7 +24,7 @@ const ChatBot = () => {
 
     try {
       
-      const response = await axios.post('http://localhost:8000/api/chat', { question: input });
+      const response = await axios.post('https://reviewbot-backend.vercel.app/api/chat', { question: input });
 
       const botMessage = {
         id: messages.length + 2,

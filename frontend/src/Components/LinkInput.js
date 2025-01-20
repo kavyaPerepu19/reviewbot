@@ -27,7 +27,7 @@ const LinkInput = ({setProduct}) => {
       formData.append('username', user)
 
 
-      const res = await axios.post('http://localhost:8000/api/scrape', formData, {
+      const res = await axios.post('https://reviewbot-backend.vercel.app/api/scrape', formData, {
 
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

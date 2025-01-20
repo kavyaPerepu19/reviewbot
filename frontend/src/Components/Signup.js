@@ -18,7 +18,7 @@ const Signup = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/signup', {
+      const response = await fetch('https://reviewbot-backend.vercel.app/api/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
