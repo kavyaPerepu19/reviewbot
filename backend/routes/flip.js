@@ -10,7 +10,7 @@ const cors = require('cors');
 const ProductModel = require('../schemas/productSchemas');
 const userProductModel = require('../schemas/historySchemas');
 const { HfInference } = require('@huggingface/inference');
-const client = new HfInference("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");
+// const client = new HfInference("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");
 const scrapeRouter = express.Router();
 
 
@@ -35,7 +35,7 @@ scrapeRouter.post('/scrape', async (req, res) => {
 //  scrape flask caaaaall
   try {
       const flaskResponse = await axios.post(
-          'http://localhost:5000/scrape',
+          process.env.flask_url+'/scrape',
           new URLSearchParams({ url }), {
               headers: {
                   'Content-Type': 'application/x-www-form-urlencoded',
@@ -104,7 +104,7 @@ scrapeRouter.post('/scrape', async (req, res) => {
 // summarization express route
       try{
          summarizeResponse = await axios.post(
-          'http://localhost:8000/api/summarize',
+          process.env.express_url+'/api/summarize',
           { reviews },
           { headers: { 'Content-Type': 'application/json' } }
           
@@ -117,7 +117,7 @@ scrapeRouter.post('/scrape', async (req, res) => {
 // sentiment express route
       try{
         sentimentResponse = await axios.post(
-          'http://localhost:8000/api/senti',
+          process.env.express_url+'/api/senti',
           { reviews },
           { headers: { 'Content-Type': 'application/json' } }
       );
@@ -130,7 +130,7 @@ scrapeRouter.post('/scrape', async (req, res) => {
 // knowledge base upload faiss filling
       try{
         const knowledge = await axios.post(
-          "http://localhost:5000/upload_reviews",
+          process.env.flask_url+"/upload_reviews",
           {reviews:flaskResponse.data},
           {headers: { 'Content-Type': 'application/json' } }
         );

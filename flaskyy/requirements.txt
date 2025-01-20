@@ -1,0 +1,9 @@
+Flask
+Flask-Cors
+torch
+transformers
+playwright
+langchain
+faiss-cpu
+huggingface-hub
+sentence-transformers

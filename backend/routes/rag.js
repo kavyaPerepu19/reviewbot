@@ -19,7 +19,7 @@ ragRouter.post('/chat', async (req, res) => {
   
     try {
         const flaskResponse = await axios.post(
-            'http://localhost:5000/query',
+            process.env.flask_url+'/query',
             {
                 question: question, 
             },

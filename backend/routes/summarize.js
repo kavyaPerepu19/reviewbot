@@ -8,7 +8,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { HfInference } = require('@huggingface/inference');
-const client = new HfInference("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");
+const client = new HfInference(process.env.hf_api);
 const sumRouter = express.Router();
 
 sumRouter.use(cors());

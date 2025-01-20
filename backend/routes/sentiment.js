@@ -19,7 +19,7 @@ sentiRouter.post('/senti', async (req, res) => {
     try {
         const reviewTexts = reviews.map((review) => review.review);
         // console.log(reviewTexts);
-        const response = await axios.post('http://localhost:5000/senti', {reviewTexts} , {
+        const response = await axios.post(process.env.flask_url+'/senti', {reviewTexts} , {
             headers: {
                 'Content-Type': 'application/json',  
             }
