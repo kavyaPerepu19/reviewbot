@@ -70,17 +70,30 @@ def upload_reviews():
     global RAW_KNOWLEDGE_BASE, KNOWLEDGE_VECTOR_DATABASE
 
     # Check if reviews is a list or nested object
-    reviews_data = request.json.get('reviews', [])
-    if isinstance(reviews_data, dict):
-        reviews = reviews_data.get('reviews', [])
+    
+    input_data_to_rag = request.json.get('input_data_to_rag', [])
+    # print(input_data_to_rag)
+    if isinstance(input_data_to_rag, dict):
+        reviews = input_data_to_rag.get('reviews', [])
     else:
-        reviews = reviews_data
+        reviews = input_data_to_rag
     
     if not reviews:
         return jsonify({"error": "No reviews provided"}), 400
 
+    product_details = input_data_to_rag.get('product_details', {})
+    product_info_text = f"Product: {product_details.get('name', '')}\nPrice: {product_details.get('price', '')}\nRating: {product_details.get('rating', '')}"
+
     RAW_KNOWLEDGE_BASE = [
-        langchainDocument(page_content=review['review']) for review in reviews
+        langchainDocument(
+            page_content=(
+                f"{product_info_text}\n"
+                f"Review Title: {review.get('title', '')}\n"
+                f"Review Text: {review.get('review', '')}\n"
+                f"Stars: {review.get('stars', '')}"
+            )
+        )
+        for review in reviews
     ]
 
     # Process and index knowledge base
@@ -164,6 +177,7 @@ def get_product_details(page):
         img_element = div_element.query_selector("img")
         
         image_url = img_element.get_attribute("src")
+        print("__________________________________________________________________")
         print(product_name, product_price, product_rating, image_url)
         
         
@@ -368,7 +382,8 @@ def scrape():
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)
+            browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
+            # browser = p.chromium.launch(headless=False)
             context = browser.new_context()
             page = context.new_page()
             page.goto(url)
@@ -376,7 +391,7 @@ def scrape():
             product_details = get_product_details(page)
             specs = get_specifications(page)
             high = get_highlights(page)
-            print("Highlights = ",high)
+            # print("Highlights = ",high)
 
             reviews = get_reviews(page)
             
@@ -389,7 +404,7 @@ def scrape():
                 'specifications': specs,
                 'highlights':high
             }
-
+            print("Response = ",response)
             browser.close()
             return jsonify(response)
 
