@@ -7,8 +7,14 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-tokenizer = AutoTokenizer.from_pretrained("siebert/sentiment-roberta-large-english")
-model = AutoModelForSequenceClassification.from_pretrained("siebert/sentiment-roberta-large-english")
+# tokenizer = AutoTokenizer.from_pretrained("siebert/sentiment-roberta-large-english")
+# model = AutoModelForSequenceClassification.from_pretrained("siebert/sentiment-roberta-large-english")
+
+# tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
+# model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
+
+tokenizer = AutoTokenizer.from_pretrained("lvwerra/distilbert-imdb")
+model = AutoModelForSequenceClassification.from_pretrained("lvwerra/distilbert-imdb")
 
 @app.route('/senti', methods=['POST'])
 def analyze_sentiment():
