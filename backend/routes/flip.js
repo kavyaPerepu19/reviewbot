@@ -35,7 +35,7 @@ scrapeRouter.post('/scrape', async (req, res) => {
 //  scrape flask caaaaall
   try {
       const flaskResponse = await axios.post(
-          process.env.flask_url+'/scrape',
+        process.env.scraper_url+'/scrape',
           new URLSearchParams({ url }), {
               headers: {
                   'Content-Type': 'application/x-www-form-urlencoded',
@@ -128,18 +128,18 @@ scrapeRouter.post('/scrape', async (req, res) => {
       }
 
 // knowledge base upload faiss filling
-      try{
-        const knowledge = await axios.post(
-          process.env.flask_url+"/upload_reviews",
-          {reviews:flaskResponse.data},
-          {headers: { 'Content-Type': 'application/json' } }
-        );
-        console.log("knowledge uploaded");
-        console.log(knowledge.data.knowledge_base);
-      }
-      catch{
-        console.log("error in uploading knowledge");
-      }
+      // try{
+      //   const knowledge = await axios.post(
+      //     process.env.flask_url+"/upload_reviews",
+      //     {reviews:flaskResponse.data},
+      //     {headers: { 'Content-Type': 'application/json' } }
+      //   );
+      //   console.log("knowledge uploaded");
+      //   console.log(knowledge.data.knowledge_base);
+      // }
+      // catch{
+      //   console.log("error in uploading knowledge");
+      // }
 
     console.log("Product Details:", pDetails);
     console.log("Summary:", summarizeResponse.data.summary);
